@@ -1,0 +1,16 @@
+설치
+
+OracleXE112_Win64.zip
+sqldeveloper-21.4.2.018...
+다운로드
+선생님 레포지토리 07데이터베이스>02_ORACLE>클라우드
+
+OracleXE112_Win64.zip
+>DISK1>setup.exe
+패스워드 1234 설정해주기
+경로 잘봐두기
+
+Port for 'Oracle HTTP Listener': 8080
+오라클은 웹에서 확인할 수 있는데 포트 8080을 씀
+
+오라클은 설치 한 후 재부팅 해줘야함
