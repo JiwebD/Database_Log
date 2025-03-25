@@ -1,0 +1,145 @@
+-- -----------------------------
+-- 조인(JOIN)
+-- -----------------------------
+-- 개념
+-- 정의 : 조인은 두 개 이상의 테이블을 결합하여 관련된 데이터를 하나의 결과 집합으로 반환하는 SQL 연산입니다. 
+--        이를 통해 분산된 데이터베이스 구조에서 필요한 정보를 효과적으로 조회할 수 있습니다.
+
+-- 종류
+-- 내부 조인(INNER JOIN), 외부조인(OUTER JOIN), 교차 조인9CROSS JOIN), 자체 조인(SELF JOIN)
+
+
+-- -----------------------------
+-- 내부 조인(INNER JOIN)
+-- -----------------------------
+-- 정의: 두 테이블 간에 지정된 조건을 만족하는 행들만 결합하여 반환합니다
+
+-- 구문:
+-- SELECT A.컬럼명, B.컬럼명
+-- FROM 테이블A A
+-- INNER JOIN 테이블B B ON A.공통컬럼 = B.공통컬럼;
+
+-- 예제코드 :
+
+-- 구매한 회원의 이름, 상품명, 가격, 수량을 출력
+SELECT u.name, b.prodName, b.price, b.amount
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID;
+
+-- 회원별 총 구매 금액
+SELECT u.userID, u.name, SUM(b.price * b.amount) AS 총구매금액
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+GROUP BY u.userID, u.name;
+
+-- 상품을 가장 많이 구매한 회원(수량 기준)
+
+select rownum as RN, aa.* from
+(
+SELECT u.name, SUM(b.amount) AS 총수량
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+GROUP BY u.name
+ORDER BY 총수량 DESC
+) aa;
+--FETCH FIRST 1 ROWS ONLY; -- 버전달라서 안됨.
+
+
+-- 특정 물품 구매한 회원 조회 – 예: “책” 구매자
+SELECT DISTINCT u.name
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+WHERE b.prodName = '책';
+
+
+
+-- -----------------------------
+-- 외부 조인(OUTER JOIN )
+-- -----------------------------
+-- 정의: 조인 조건에 일치하지 않는 행도 포함하여 반환합니다. 
+
+-- 종류 및 구문 : LEFT, RIGHT, FULL
+
+-- -----------------------
+-- LEFT OUTER JOIN: 
+-- -----------------------
+-- 왼쪽 테이블의 모든 행과 조인 조건에 맞는 오른쪽 테이블의 행을 반환하며, 조건에 맞지 않는 경우 오른쪽 테이블의 컬럼은 NULL로 표시됩니다.
+-- 구문: 
+SELECT A.컬럼명, B.컬럼명
+FROM 테이블A A
+LEFT OUTER JOIN 테이블B B ON A.공통컬럼 = B.공통컬럼;
+
+-- 예제:
+-- 모든 회원의 이름과 구매 내역(없는 경우 NULL) 조회
+
+SELECT u.userID, u.name, b.prodName, b.price
+FROM userTbl u
+LEFT JOIN buyTbl b ON u.userID = b.userID;
+
+-- 구매가 없는 회원 찾기 (LEFT JOIN + WHERE NULL)
+SELECT u.userID, u.name
+FROM userTbl u
+LEFT JOIN buyTbl b ON u.userID = b.userID
+WHERE b.userID IS NULL;
+
+
+-------------------------
+RIGHT OUTER JOIN: 
+-------------------------
+-- 오른쪽 테이블의 모든 행과 조인 조건에 맞는 왼쪽 테이블의 행을 반환하며, 조건에 맞지 않는 경우 왼쪽 테이블의 컬럼은 NULL로 표시됩니다.
+
+-- 구문:
+SELECT A.컬럼명, B.컬럼명
+FROM 테이블A A
+RIGHT OUTER JOIN 테이블B B ON A.공통컬럼 = B.공통컬럼;
+
+-- 예제:
+-- 구매 내역이 있는 모든 데이터를 기준으로 회원 정보 조회
+SELECT u.name, b.prodName, b.price
+FROM userTbl u
+RIGHT JOIN buyTbl b ON u.userID = b.userID;
+
+
+-- -----------------------------------
+-- FULL OUTER JOIN 예제용 테이블 생성
+-- -----------------------------------
+-- 학생 테이블
+CREATE TABLE studentTbl (
+  studentID CHAR(5) PRIMARY KEY,
+  name VARCHAR2(20)
+);
+
+-- 시험 응시 테이블
+CREATE TABLE examTbl (
+  examID CHAR(5) PRIMARY KEY,
+  studentID CHAR(5),
+  subject VARCHAR2(20),
+  score NUMBER
+);
+
+-- 학생 데이터 삽입
+INSERT INTO studentTbl VALUES ('S001', '홍길동');
+INSERT INTO studentTbl VALUES ('S002', '김철수');
+INSERT INTO studentTbl VALUES ('S003', '이영희');
+INSERT INTO studentTbl VALUES ('S004', '박지민');
+
+-- 시험 응시 데이터 삽입
+INSERT INTO examTbl VALUES ('E101', 'S001', '수학', 85);
+INSERT INTO examTbl VALUES ('E102', 'S002', '영어', 90);
+INSERT INTO examTbl VALUES ('E103', 'S005', '국어', 88); -- 존재하지 않는 학생
+
+COMMIT;
+-- -----------------------------------
+-- -----------------------------------
+
+select * from studentTbl;
+
+select * from examTbl;
+
+select *
+from studentTbl s
+full outer join examTbl e
+on s.studentID = e.studentID;
+
+
+

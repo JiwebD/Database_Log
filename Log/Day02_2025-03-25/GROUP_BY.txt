@@ -1,7 +1,0 @@
-SELECT groupName, prodName, SUM(price * amount) AS 판매액
-FROM buyTbl
-WHERE groupName IS NOT NULL
-GROUP BY GROUPING SETS((groupName), (prodName), ());
-
-여기서 
-groupName이  null인 행은 왜 출려되지?
