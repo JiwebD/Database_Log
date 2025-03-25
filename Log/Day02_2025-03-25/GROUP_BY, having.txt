@@ -1,0 +1,185 @@
+--------------------------
+-- GROUP BY
+--------------------------
+--  목적 : 데이터를 그룹화하여 집계 함수와 함께 사용하는 SQL 구문
+--    집계 함수 : SUM, AVG, COUNT, MAX, MIN 등
+
+select *
+from buytbl;
+
+-- 사용자별 총 구매액 계산
+select userid,sum(price*amount) as 구매총액
+from buytbl
+group by userid;
+
+-- 사용자별 구매 횟수 계산
+select userid,count(*) as 구매횟수
+from buytbl
+group by userid;
+
+-- 지역별 사용자 수 계산
+SELECT addr, COUNT(*) AS 사용자수
+FROM userTbl
+GROUP BY addr;
+
+--제품 그룹별 판매 금액 합계(!)
+SELECT groupName, SUM(price * amount) AS 판매액
+FROM buyTbl
+--WHERE groupName IS NOT NULL
+GROUP BY groupName;
+
+-- 출생년도 기준 사용자 수
+select birthyear, count(*) as 인원수
+from userTbl
+group by birthYear
+order by birthYear;
+
+
+--------------------------
+-- ORDER BY  (정렬)
+--------------------------
+-- 오름차순 asc
+SELECT Name , mDate From userTbl ORDER BY mDate asc;
+SELECT Name , mDate From userTbl ORDER BY name;
+-- 내림차순 desc
+SELECT Name , mDate From userTbl ORDER BY mDate desc;
+
+-- 오름+내림
+-- 키가 큰 사람부터 작은사람순으로 정렬, 키가 같은 사람이 있으면 이름순 정렬
+ SELECT Name, height FROM userTbl ORDER BY height DESC, name ASC;
+ 
+--------------------------
+-- 서브쿼리
+--------------------------
+--  Oracle 꿀템 키워드 Rownum(LIMIT) 행마다 기본적으로 부여되는 num
+select rownum as RN, usertbl.* from usertbl where RN = 2; -- 에러
+-- 서브쿼리로 안쓰고 where절 쓰면 기본 실행 순서가
+-- from > where > group by > having > select > order by라서
+-- select에서 정한 rownum as RN 컬럼을 먼저실행되는 where절에서 사용할 수 없다.
+
+select * from
+(select rownum as RN, usertbl.* from usertbl) where RN = 2;
+-- (select rownum as RN, usertbl.* from usertbl) 를 테이블로 사용중
+-- 이와 같이 서브쿼리를 사용하면 가능!!
+
+select * from
+(select rownum as RN, usertbl.* from usertbl) where RN>=2 and RN<=4;
+
+--------------------------
+-- HAVING
+--------------------------
+--목적 : 그룹화한 후에 그룹을 필터링
+
+--구매 금액 합계가 1000 이상인 사용자 조회
+SELECT userID, SUM(price * amount) AS 총구매액
+FROM buyTbl
+GROUP BY userID
+HAVING SUM(price * amount) >= 1000;
+
+--평균 키가 175 이상인 지역 조회
+SELECT addr, AVG(height) AS 평균키
+FROM userTbl
+GROUP BY addr
+HAVING AVG(height) >= 175;
+
+--구매 횟수가 2회 이상인 사용자의 총 구매액
+SELECT userID, SUM(price * amount) AS 총구매액
+FROM buyTbl
+GROUP BY userID
+HAVING COUNT(*) >= 2;
+
+--최대 구매 금액이 500 이상인 물품별 통계
+SELECT prodName, COUNT(*) AS 구매횟수, MAX(price * amount) AS 최대구매액
+FROM buyTbl
+GROUP BY prodName
+HAVING MAX(price * amount) >= 500;
+
+--총 구매 횟수가 3회 이상이고 총 구매액이 100 이상인 사용자
+SELECT userID, COUNT(*) AS 구매횟수, SUM(price * amount) AS 총구매액
+FROM buyTbl
+GROUP BY userID
+HAVING COUNT(*) >= 3 AND SUM(price * amount) >= 100;
+
+
+-- -------------------
+-- 복합 group by 
+-- -------------------
+--사용자 지역별, 제품 그룹별 구매액 합계
+select * from userTbl;
+select * from buyTbl;
+
+SELECT u.addr, b.groupName, SUM(b.price * b.amount) AS 총구매액
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+WHERE b.groupName IS NOT NULL
+GROUP BY u.addr, b.groupName
+ORDER BY u.addr, b.groupName;
+
+SELECT u.addr, Coalesce(b.groupName, '미분류'), SUM(b.price * b.amount) AS 총구매액
+FROM userTbl u
+JOIN buyTbl b 
+ON u.userID = b.userID
+GROUP BY u.addr, b.groupName
+ORDER BY 총구매액 desc;
+
+--연령대별, 제품별 구매 통계
+SELECT 
+    FLOOR((2023 - birthYear) / 10) * 10 AS 연령대, 
+    b.prodName, 
+    COUNT(*) AS 구매횟수,
+    SUM(b.price * b.amount) AS 총구매액
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+GROUP BY FLOOR((2023 - birthYear) / 10) * 10, b.prodName
+ORDER BY 연령대, b.prodName;
+
+--지역별, 연도별 회원가입 수
+SELECT 
+    addr, 
+    EXTRACT(YEAR FROM mDate) AS 가입연도, 
+    COUNT(*) AS 회원수
+FROM userTbl
+GROUP BY addr, EXTRACT(YEAR FROM mDate)
+HAVING COUNT(*) >= 2
+ORDER BY addr, 가입연도;
+
+-- -----------------------
+-- GROUP BY 함수와 ROLLUP
+-- -----------------------
+--ROLLUP
+--소계와 합계를 자동으로 계산해주는 함수.
+
+select nvl(groupName,'미분류'),sum(price*amount)
+from buytbl
+group by rollup(groupname);
+
+-- -----------------------
+-- GROUP BY 함수와 CUBE
+-- -----------------------
+-- 목적 : 모든 가능한 조합의 소계와 합계를 계산합니다.
+
+SELECT groupName, prodName, SUM(price * amount) AS 판매액
+FROM buyTbl
+WHERE groupName IS NOT NULL
+GROUP BY CUBE(groupName, prodName);
+
+-- -----------------------
+-- GROUPING SETS
+-- -----------------------
+--특정 그룹화 조합의 결과를 UNION ALL로 결합한 것과 같은 결과를 제공합니다.
+SELECT groupName, prodName, SUM(price * amount) AS 판매액
+FROM buyTbl
+WHERE groupName IS NOT NULL
+GROUP BY GROUPING SETS((groupName), (prodName), ());
+
+select groupName,NULL as prodName,sum(price *amount) 
+from buytbl
+where groupname is not null
+group by groupname
+
+union all
+
+select NULL as groupName,prodName,sum(price*amount)
+from buytbl
+where groupName is not null
+group by prodName;

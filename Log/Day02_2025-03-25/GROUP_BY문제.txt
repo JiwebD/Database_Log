@@ -1,0 +1,79 @@
+--------------------------
+-- 문제 GROUP BY 문
+--------------------------
+--1) userTbl에서 지역(addr)별 사용자 수를 구하는 SQL문을 작성하시오.
+select addr,count(*) from usertbl group by addr;
+
+--2) buyTbl에서 사용자(userID)별 총 구매액을 구하는 SQL문을 작성하시오. 총 구매액은 가격(price)과 수량(amount)의 곱의 합으로 계산하시오.
+select userid,sum(price * amount) from buytbl group by userid;
+
+--3) buyTbl에서 제품 그룹(groupName)별 판매 수량의 합계를 구하는 SQL문을 작성하시오. NULL 값은 '미분류'로 표시하시오.
+-- COALESCE = 가장 처음으로 NULL이 아닌 값을 반환함. = 여러값 중 null이 아닌 첫번째 값.
+-- COALESCE(null,'a','b')  => a 출력
+-- COALESCE(groupName,'미분류')
+-- => groupName 값 이 null 이 아니면 = COALESCE('null이 아닌값','미분류') =null이 아닌값 출력
+-- => groupName 값 이 null 이면 = COALESCE(null,'미분류') =null이 아닌값 출력 첫번째 값 '미분류'출력
+select coalesce(groupName,'미분류') as 카테고리 ,sum(amount) from buytbl group by groupName;
+-- NVL
+select NVL(groupName,'미분류') as 카테고리 ,sum(amount) from buytbl group by groupName;
+-- case - IS NULL THEN
+select 
+    case 
+        when groupName IS NULL THEN '미분류!'
+        else groupName
+    end
+    as 카테고리 ,sum(amount)
+from buytbl
+group by groupName;
+
+--4) userTbl에서 출생년도(birthYear)별 평균 키(height)를 구하는 SQL문을 작성하시오.
+select birthYear,avg(height) from usertbl group by birthYear;
+
+--5) buyTbl에서 제품명(prodName)별 구매 횟수와 총 구매액을 구하는 SQL문을 작성하시오. 결과는 구매 횟수가 많은 순으로 정렬하시오.
+select prodName,count(*) as "구매 횟수", sum(price*amount) as 총구매액 from buytbl group by prodName;
+
+--6) userTbl에서 mobile1(통신사)별 가입자 수를 구하되, NULL 값은 '미입력'으로 표시하는 SQL문을 작성하시오.
+select COALESCE(mobile1, '미입력') as 통신사 , count(*) as "가입자 수" from userTbl group by mobile1;
+
+select * from userTbl;
+
+--7) userTbl과 buyTbl을 조인하여 지역(addr)별 총 구매액을 구하는 SQL문을 작성하시오.
+
+select u.addr,sum(b.price*b.amount) as 총구매액
+from userTbl u
+join buytbl b
+on u.userid = b.userid
+group by u.addr;
+
+--8) buyTbl에서 사용자별 구매한 제품의 종류 수를 구하는 SQL문을 작성하시오.
+select * from buyTbl;
+
+select userid,groupname,count(groupName) from buyTbl group by userid,groupname;
+
+--9) userTbl에서 가입 연도별(mDate의 연도 부분) 가입자 수를 구하는 SQL문을 작성하시오.
+select SUBSTR(mDate,1,2),count(*) from usertbl group by SUBSTR(mDate,1,2);
+
+SELECT EXTRACT(YEAR FROM mDate) AS 가입연도, COUNT(*) AS 가입자수
+FROM userTbl
+GROUP BY EXTRACT(YEAR FROM mDate)
+ORDER BY 가입연도;
+
+--10) buyTbl과 userTbl을 조인하여 연령대별(10대, 20대, ...) 구매 총액을 계산하는 SQL문을 작성하시오. 연령은 2023년 기준으로 계산하시오.
+select *
+from buyTbl;
+
+select *
+from userTbl;
+
+select 2025-u.birthyear as 연령 , sum(b.price* b.amount)
+from userTbl u
+join buyTbl b
+on u.userid = b.userid
+group by u.birthyear;
+
+SELECT FLOOR((2025 - u.birthYear) / 10) * 10 AS 연령대, 
+       SUM(b.price * b.amount) AS 구매총액
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+GROUP BY FLOOR((2025 - u.birthYear) / 10) * 10
+ORDER BY 연령대;
