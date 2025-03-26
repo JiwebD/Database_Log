@@ -1,0 +1,101 @@
+-- -------------------------------
+-- 교차 조인(CROSS JOIN)
+-- -------------------------------
+
+-- 정의 : 두 테이블의 모든 행의 조합을 반환합니다.
+-- 결과 : 두 테이블의 행 수 곱한 만큼의 행 생성.
+-- 특징 : 모든 가능한 행 생성  -> 결과 집합의 크기가 매우 커질 수 있음.
+
+-- 구문 :
+SELECT A.컬럼명, B.컬럼명
+FROM 테이블A A
+CROSS JOIN 테이블B B;
+
+-- 예제 :
+
+-- 모든 회원과 모든 상품 조합 조회 (테이블 내 모든 조합)
+select *
+from userTbl u
+cross Join buyTbl b;
+
+
+
+-- -------------------------------
+-- 자체 조인(SELF JOIN)
+-- -------------------------------
+-- 정의 : 하나의 테이블을 자기 자신과 조인하는 방식입니다. 
+-- 목적 : 주로 계층적 데이터 구조를 표현할 때 사용됩니다.
+-- 특징 : 같은 테이블을 두 번 사용하므로, 반드시 별칭(alias)을 지정해야 합니다.
+--       직원 테이블에서 각 직원과 그들의 매니저 정보를 함께 조회할 때 사용됩니다
+
+
+-- 구문:
+SELECT A.컬럼명, B.컬럼명
+FROM 테이블명 A
+INNER JOIN 테이블명 B ON A.공통컬럼 = B.공통컬럼;
+
+
+예제 :
+
+-- userTbl 내에서 출생년도가 같은 회원끼리 짝 지어보기 (자기 자신은 제외)
+SELECT A.name AS 회원A, B.name AS 회원B, A.birthYear
+FROM userTbl A
+JOIN userTbl B 
+ON A.birthYear = B.birthYear
+where A.userID <> B.userID; -- <> 같지 않다 비교연산자
+
+select userid,name, birthYear
+from userTbl;
+
+-- --------------------------------------
+-- 사원, 상사 실습 테이블 생성
+-- --------------------------------------
+DROP TABLE empTbl;
+
+CREATE TABLE empTbl (
+  empID     NUMBER PRIMARY KEY,
+  empName   VARCHAR2(20),
+  position  VARCHAR2(20),
+  managerID NUMBER  -- 상사의 사번
+);
+
+-- 데이터 삽입
+INSERT INTO empTbl VALUES (1, '김대표', '대표이사', NULL);
+INSERT INTO empTbl VALUES (2, '이부장', '기획부장', 1);
+INSERT INTO empTbl VALUES (3, '박과장', '기획과장', 2);
+INSERT INTO empTbl VALUES (4, '최대리', '기획대리', 3);
+INSERT INTO empTbl VALUES (5, '정부장', '영업부장', 1);
+INSERT INTO empTbl VALUES (6, '홍사원', '영업사원', 5);
+INSERT INTO empTbl VALUES (7, '유팀장', '개발팀장', 1);
+INSERT INTO empTbl VALUES (8, '고주임', '개발주임', 7);
+INSERT INTO empTbl VALUES (9, '신사원', '개발사원', 8);
+
+COMMIT;
+
+-- 예제 :
+
+-- 직원과 그 상사의 이름 출력
+SELECT E.empName as 직원, M.empName as 상사
+FROM empTbl E
+LEFT JOIN empTbl M
+ON E.managerID = M.empID;
+
+-- 부하직원이 1명 이상인 상사 목록
+SELECT M.empName AS 상사, COUNT(*) AS 부하수
+FROM empTbl E
+JOIN empTbl M ON E.managerID = M.empID
+GROUP BY M.empName;
+
+-- 상사의 직급이 '부장'인 직원 조회
+select E.empname, M.empname, M.position
+from empTbl E
+join empTbl M
+on E.managerID = M.empid;
+where M.position LIKE '%부장';
+
+
+-- 직원과 상사의 ID, 이름 출력
+
+
+
+-- 상사가 없는 직원(최상위 관리자) 조회

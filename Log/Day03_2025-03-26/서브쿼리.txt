@@ -43,6 +43,9 @@ WHERE height > (SELECT height FROM userTbl WHERE name = '김경호');
 --서브 쿼리의 실행 결과가 여러 행 반환
 --다중 행 비교 연산자 사용: IN, ANY, ALL, EXISTS
 
+-- IN
+-- "목록에 있는 값 중 하나라도 일치하면" 조건을 만족.
+
 -- 경남 지역에 사는 사용자와 같은 키를 가진 사용자 조회
 SELECT userID, name, addr, height
 FROM userTbl
@@ -105,13 +108,68 @@ SELECT u.userID, u.name,
 FROM userTbl u;
 
 
+-- -------------
+-- FROM 절에 사용되는 서브 쿼리 (인라인 뷰)
+-- -------------
+-- 서브 쿼리가 테이블처럼 사용됨
+
+-- 각 지역별 키가 가장 큰 사람들만 조회
+SELECT b.addr, b.name, b.height
+FROM (SELECT addr, name, height, 
+             ROW_NUMBER() OVER(PARTITION BY addr ORDER BY height DESC) AS rn
+      FROM userTbl) b
+WHERE b.rn = 1;
+
+
+-- -------------
+-- HAVING 절에 사용되는 서브 쿼리
+-- -------------
+
+-- 평균 구매액보다 많은 금액을 사용한 사용자들의 아이디와 총 구매액 조회
+SELECT userID, SUM(price*amount) AS 총구매액
+FROM buyTbl
+GROUP BY userID
+HAVING SUM(price*amount) > (SELECT AVG(price*amount) FROM buyTbl);
+
+
+-- ---------------------------
+-- 유형-3 동작 방식에 따른 분류
+-- ---------------------------
+-- -------------
+-- 비연관 서브 쿼리(Non-correlated Subquery)
+-- -------------
+-- 메인 쿼리와 독립적으로 실행 가능
+-- 메인 쿼리에 값을 제공하는 형태
+
+-- 가장 큰 키를 가진 사용자 조회
+SELECT userID, name, height 
+FROM userTbl 
+WHERE height = (SELECT MAX(height) FROM userTbl);
+
+
+-- -------------
+-- 연관 서브 쿼리(Correlated Subquery)
+-- -------------
+
+-- 메인 쿼리와 서브 쿼리가 서로 연관되어 실행
+-- 서브 쿼리가 메인 쿼리의 컬럼을 참조
+
+-- 자신이 속한 지역의 평균 키보다 큰 사용자 조회
+SELECT u1.userID, u1.name, u1.addr, u1.height
+FROM userTbl u1
+WHERE u1.height > (SELECT AVG(u2.height) FROM userTbl u2 WHERE u2.addr = u1.addr);
+
 -- -------------------------------
 -- 문제
 -- -------------------------------
 --1.
 --서울 지역에 거주하는 회원 중, 전체 평균 키보다 큰 회원의 이름과 키를 조회하는 SQL문을 작성하시오.
 
-s
+select name, height
+from userTbl
+where addr ='서울'
+    and height > (select avg(height) from userTbl);
+
 
 -- join 사용
 select name, height
@@ -130,6 +188,15 @@ where addr = '서울'
 --2.
 --물품을 한 번이라도 구매한 적이 있는 회원의 이름과 주소를 조회하는 SQL문을 작성하시오.
 --(단, buyTbl의 userID 기준)
+
+-- buytbl에는 제품을 구매한 고객의 정보만 들어있기때문에
+-- buytbl의 userid에 있는 값과 일치한 userTbl의 userid 가 구매한 고객임.
+select name, addr 
+from userTbl
+where userid in (select distinct userid from buytbl);
+
+
+
 select u.name, u.addr
 from usertbl u
 left join buytbl b
@@ -140,6 +207,7 @@ where b.userid is not null
 --3.
 --‘전자’ 분류 상품 중 가장 비싼 상품을 구매한 회원의 이름과 상품명, 가격을 조회하는 SQL문을 작성하시오.
 
+-- ALL 사용 상품이름이 전자인 price값 을 모두 만족해야함 >= 최댓값 이상.
 select u.name, b.prodname, b.price
 from usertbl u
 join buytbl b
@@ -147,8 +215,42 @@ on u.userid = b.userid
 where b.price >= ALL(select price from buytbl where groupname = '전자');
 
 
+SELECT u.name, b.prodName, b.price
+FROM buyTbl b
+JOIN userTbl u ON b.userID = u.userID
+WHERE groupName = '전자'
+  AND price = (SELECT MAX(price) FROM buyTbl WHERE groupName = '전자');
+
+
 --4.
 --각 회원이 구매한 총 금액(price × amount)의 평균보다 더 많이 구매한 회원의 이름과 총 구매 금액을 조회하는 SQL문을 작성하시오.
+
+select 이름, 총구매
+from(
+    select 
+        (select name from usertbl u where u.userid = b.userid) as 이름,
+        sum(b.price*b.amount) as 총구매
+    from buytbl b
+    group by b.userid
+    )
+where 총구매 >= (select avg(price*amount)from buytbl);
+
+
+SELECT userID, total
+FROM (
+  SELECT userID, SUM(price * amount) AS total
+  FROM buyTbl
+  GROUP BY userID
+)
+WHERE total > (
+  SELECT AVG(total_price)
+  FROM (
+    SELECT SUM(price * amount) AS total_price
+    FROM buyTbl
+    GROUP BY userID
+  )
+);
+
 select u.name, sum(price*amount) as "총 구매 금액"
 from usertbl u
 join buytbl b
