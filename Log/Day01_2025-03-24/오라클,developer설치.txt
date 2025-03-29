@@ -2,7 +2,7 @@
 오라클db설치
 --------------------
 OracleXE112_Win64.zip
-sqldeveloper-21.4.2.018...
+sqldeveloper-21.4.2.018....
 
 다운로드 경로
 선생님 레포지토리 07데이터베이스>02_ORACLE>클라우드
