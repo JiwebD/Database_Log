@@ -1,0 +1,123 @@
+-- 00) 테이블 생성
+-- tbl_member
+drop table tbl_member;
+create table tbl_member
+(
+Member_id INT,
+Member_name varchar(45),
+Member_identity varchar(45),
+Member_grade varchar(45),
+Member_addr varchar(45),
+Member_phone varchar(45)
+);
+
+-- tbl_book
+drop table tbl_book;
+create table tbl_book
+(
+Book_code INT,
+Classification_ID INT,
+book_author varchar(45),
+book_name varchar(45),
+publisher varchar(45),
+isrental char(1)
+);
+
+-- tbl_rental
+drop table tbl_rental;
+create table tbl_rental
+(
+Rental_id int,
+Book_code int,
+Member_id int
+);
+
+-- 1) tbl_member의 Member_id 에 Primary key 제약 조건 설정하세요(alter 사용)
+ALTER TABLE tbl_member
+ADD CONSTRAINT pk_student_id PRIMARY KEY (Member_id);
+-- 2) tbl_book의 Book_code에 primary key 제약 조건 설정하세요(alter 사용)
+ALTER TABLE tbl_book
+ADD CONSTRAINT pk_Book_code PRIMARY KEY (Book_code);
+-- 3) tbl_rental의 Book_code 에 Book_Tbl의 Book_code 로 FK 설정하세요(alter 사용)
+--    - Delete 시 cascade 옵션 적용합니다
+ALTER TABLE tbl_rental
+ADD CONSTRAINT fk_Book_code
+FOREIGN KEY (Book_code)
+REFERENCES tbl_book(Book_code)
+ON DELETE CASCADE;
+
+-- 4) Rental_tbl 의 Member_id에 Member_tbl의 Member_id로 FK 설정하세요(alter사용)
+--    - Delete 시 cascade 옵션 적용합니다
+ALTER TABLE tbl_rental
+ADD CONSTRAINT fk_Member_id
+FOREIGN KEY (Member_id)
+REFERENCES tbl_member(Member_id)
+ON DELETE CASCADE;
+
+-- 5) 각 테이블에 다음 값을 넣어보세요
+-- tbl_member
+insert into tbl_member values(111,'aaa','111','일반','대구','010-111-2222');
+insert into tbl_member values(222,'bbb','222','VIP','울산','010-111-2222');
+insert into tbl_member values(333,'ccc','333','VIP','인천','010-111-2222');
+insert into tbl_member values(444,'ddd','444','일반','부산','010-111-2222');
+insert into tbl_member values(555,'eee','555','VIP','서울','010-111-2222');
+insert into tbl_member values(666,'fff','666','일반','경기','010-111-2222');
+
+-- tbl_book
+insert into tbl_book values(1010,1,'윤성우','열혈C','오렌지미디어','1');
+insert into tbl_book values(1011,1,'남궁성','JAVA의정석','OO미디어','1');
+insert into tbl_book values(1012,1,'남길동','이것이리눅스다','한빛미디어','1');
+insert into tbl_book values(2010,2,'데일카네기','인간관계론','OO미디어','1');
+insert into tbl_book values(2011,2,'홍길동','미움받을용기','OO미디어','1');
+
+-- tbl_rental
+insert into tbl_rental values(1,1010,111);
+insert into tbl_rental values(2,1011,222);
+insert into tbl_rental values(3,1012,333);
+
+select * from tbl_book;
+select * from tbl_member;
+select * from tbl_rental;
+
+-- 6) 각 테이블의 제약 조건을 확인하세요(사전검색)
+--    - tbl_member 의 Primary key 확인이 되어야 합니다.
+--    - tbl_book 의 Primary key 확인이 되어야 합니다.
+--    - tbl_rental 의 Foreign Key 확인이 되어야 합니다.
+SELECT
+    uc.table_name,
+    uc.constraint_name,
+    uc.constraint_type,
+    ucc.column_name
+FROM user_constraints uc
+JOIN user_cons_columns ucc
+    ON uc.constraint_name = ucc.constraint_name
+WHERE uc.table_name IN ('TBL_MEMBER', 'TBL_BOOK', 'TBL_RENTAL');
+
+-- 7) Rental_tbl 의 각 FK열에 Index 를 추가하고 확인해보세요
+-- FK: Member_id에 인덱스 추가
+CREATE INDEX idx_rental_member_id ON tbl_rental(Member_id);
+-- FK: Book_code에 인덱스 추가
+CREATE INDEX idx_rental_book_code ON tbl_rental(Book_code);
+-- 확인
+SELECT *
+FROM all_ind_columns
+WHERE table_name = 'TBL_RENTAL';
+
+-- 8) 다음과 같이 내용이 나오도록하는 View 테이블을 만들고 사용해 봅니다(조인+뷰사용)
+--    - 뷰테이블명 : ShowRental_view
+--    - JOIN 종류 : Inner Join 사용할 것
+--    - 책을 대여한 회원에 대한 정보를 표시
+--    - Rental_Id,Member_Name,Book_name 만 표시
+
+-- 만들기
+CREATE OR REPLACE VIEW ShowRental_view AS
+SELECT
+    r.Rental_id,
+    m.Member_name,
+    b.book_name
+FROM tbl_rental r
+INNER JOIN tbl_member m ON r.Member_id = m.Member_id
+INNER JOIN tbl_book b ON r.Book_code = b.Book_code;
+
+-- 확인
+select * from ShowRental_view;

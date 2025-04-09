@@ -1,0 +1,80 @@
+-- ===========================
+-- [1] Primary Key 설정
+-- ===========================
+ALTER TABLE tbl_member
+ADD CONSTRAINT pk_member_id PRIMARY KEY (Member_id);
+
+ALTER TABLE tbl_book
+ADD CONSTRAINT pk_book_code PRIMARY KEY (Book_code);
+
+-- ===========================
+-- [2] Foreign Key 설정 (ON DELETE CASCADE)
+-- ===========================
+ALTER TABLE tbl_rental
+ADD CONSTRAINT fk_book_code
+FOREIGN KEY (Book_code)
+REFERENCES tbl_book(Book_code)
+ON DELETE CASCADE;
+
+ALTER TABLE tbl_rental
+ADD CONSTRAINT fk_member_id
+FOREIGN KEY (Member_id)
+REFERENCES tbl_member(Member_id)
+ON DELETE CASCADE;
+
+-- ===========================
+-- [3] 데이터 삽입
+-- ===========================
+
+-- tbl_member
+INSERT INTO tbl_member VALUES (111,'aaa','111','일반','대구','010-111-2222');
+INSERT INTO tbl_member VALUES (222,'bbb','222','VIP','울산','010-111-2222');
+INSERT INTO tbl_member VALUES (333,'ccc','333','VIP','인천','010-111-2222');
+INSERT INTO tbl_member VALUES (444,'ddd','444','일반','부산','010-111-2222');
+INSERT INTO tbl_member VALUES (555,'eee','555','VIP','서울','010-111-2222');
+INSERT INTO tbl_member VALUES (666,'fff','666','일반','경기','010-111-2222');
+
+-- tbl_book
+INSERT INTO tbl_book VALUES (1010,1,'윤성우','열혈C','오렌지미디어','1');
+INSERT INTO tbl_book VALUES (1011,1,'남궁성','JAVA의정석','OO미디어','1');
+INSERT INTO tbl_book VALUES (1012,1,'남길동','이것이리눅스다','한빛미디어','1');
+INSERT INTO tbl_book VALUES (2010,2,'데일카네기','인간관계론','OO미디어','1');
+INSERT INTO tbl_book VALUES (2011,2,'홍길동','미움받을용기','OO미디어','1');
+
+-- tbl_rental
+INSERT INTO tbl_rental VALUES (1,1010,111);
+INSERT INTO tbl_rental VALUES (2,1011,222);
+INSERT INTO tbl_rental VALUES (3,1012,333);
+
+-- ===========================
+-- [4] 제약조건 확인
+-- ===========================
+-- (실행용 SELECT, 결과는 MySQL 콘솔에서 확인)
+SELECT table_name, constraint_name, constraint_type
+FROM information_schema.table_constraints
+WHERE table_schema = DATABASE()
+  AND table_name IN ('tbl_member', 'tbl_book', 'tbl_rental');
+
+-- ===========================
+-- [5] 인덱스 추가 및 확인
+-- ===========================
+CREATE INDEX idx_rental_member_id ON tbl_rental(Member_id);
+CREATE INDEX idx_rental_book_code ON tbl_rental(Book_code);
+
+-- 인덱스 확인
+SHOW INDEX FROM tbl_rental;
+
+-- ===========================
+-- [6] 뷰 생성 및 확인
+-- ===========================
+CREATE OR REPLACE VIEW ShowRental_view AS
+SELECT
+  r.Rental_id,
+  m.Member_name,
+  b.book_name
+FROM tbl_rental r
+INNER JOIN tbl_member m ON r.Member_id = m.Member_id
+INNER JOIN tbl_book b ON r.Book_code = b.Book_code;
+
+-- 뷰 데이터 조회
+SELECT * FROM ShowRental_view;
