@@ -1,3 +1,42 @@
+
+-- ===========================
+-- [0] 테이블 생성
+-- ===========================
+-- tbl_member
+DROP TABLE IF EXISTS tbl_member;
+CREATE TABLE tbl_member (
+    Member_id INT PRIMARY KEY AUTO_INCREMENT,
+    Member_name VARCHAR(45) NOT NULL,
+    Member_identity VARCHAR(45),
+    Member_grade VARCHAR(45),
+    Member_addr VARCHAR(45),
+    Member_phone VARCHAR(45)
+);
+
+-- tbl_book
+DROP TABLE IF EXISTS tbl_book;
+CREATE TABLE tbl_book (
+    Book_code INT PRIMARY KEY AUTO_INCREMENT,
+    Classification_ID INT,
+    book_author VARCHAR(45),
+    book_name VARCHAR(45),
+    publisher VARCHAR(45),
+    isrental CHAR(1) DEFAULT 'N' -- 대여 여부 (Y/N)
+);
+
+-- tbl_rental
+DROP TABLE IF EXISTS tbl_rental;
+CREATE TABLE tbl_rental (
+    Rental_id INT PRIMARY KEY AUTO_INCREMENT,
+    Book_code INT,
+    Member_id INT,
+    Rental_date DATETIME DEFAULT CURRENT_TIMESTAMP, -- 대여 일자
+    FOREIGN KEY (Book_code) REFERENCES tbl_book(Book_code),
+    FOREIGN KEY (Member_id) REFERENCES tbl_member(Member_id)
+);
+
+
+
 -- ===========================
 -- [1] Primary Key 설정
 -- ===========================
