@@ -1,12 +1,10 @@
+-- 00) 테이블 생성
 
--- ===========================
--- [0] 테이블 생성
--- ===========================
 -- tbl_member
 DROP TABLE IF EXISTS tbl_member;
 CREATE TABLE tbl_member (
-    Member_id INT PRIMARY KEY AUTO_INCREMENT,
-    Member_name VARCHAR(45) NOT NULL,
+    Member_id INT PRIMARY KEY,
+    Member_name VARCHAR(45),
     Member_identity VARCHAR(45),
     Member_grade VARCHAR(45),
     Member_addr VARCHAR(45),
@@ -16,54 +14,42 @@ CREATE TABLE tbl_member (
 -- tbl_book
 DROP TABLE IF EXISTS tbl_book;
 CREATE TABLE tbl_book (
-    Book_code INT PRIMARY KEY AUTO_INCREMENT,
+    Book_code INT PRIMARY KEY,
     Classification_ID INT,
     book_author VARCHAR(45),
     book_name VARCHAR(45),
     publisher VARCHAR(45),
-    isrental CHAR(1) DEFAULT 'N' -- 대여 여부 (Y/N)
+    isrental CHAR(1)
 );
 
 -- tbl_rental
 DROP TABLE IF EXISTS tbl_rental;
 CREATE TABLE tbl_rental (
-    Rental_id INT PRIMARY KEY AUTO_INCREMENT,
+    Rental_id INT,
     Book_code INT,
-    Member_id INT,
-    Rental_date DATETIME DEFAULT CURRENT_TIMESTAMP, -- 대여 일자
-    FOREIGN KEY (Book_code) REFERENCES tbl_book(Book_code),
-    FOREIGN KEY (Member_id) REFERENCES tbl_member(Member_id)
+    Member_id INT
 );
 
+-- 1) tbl_member의 Member_id 에 Primary key 제약 조건 설정 (이미 생성 시 지정했지만 따로 분리할 경우)
+-- 생략 가능. 이미 PRIMARY KEY 지정됨
 
+-- 2) tbl_book의 Book_code 에 Primary key 제약 조건 설정 (생성 시 지정됨)
 
--- ===========================
--- [1] Primary Key 설정
--- ===========================
-ALTER TABLE tbl_member
-ADD CONSTRAINT pk_member_id PRIMARY KEY (Member_id);
-
-ALTER TABLE tbl_book
-ADD CONSTRAINT pk_book_code PRIMARY KEY (Book_code);
-
--- ===========================
--- [2] Foreign Key 설정 (ON DELETE CASCADE)
--- ===========================
+-- 3) tbl_rental의 Book_code 에 FK 설정 (ON DELETE CASCADE)
 ALTER TABLE tbl_rental
-ADD CONSTRAINT fk_book_code
+ADD CONSTRAINT fk_Book_code
 FOREIGN KEY (Book_code)
 REFERENCES tbl_book(Book_code)
 ON DELETE CASCADE;
 
+-- 4) tbl_rental의 Member_id 에 FK 설정 (ON DELETE CASCADE)
 ALTER TABLE tbl_rental
-ADD CONSTRAINT fk_member_id
+ADD CONSTRAINT fk_Member_id
 FOREIGN KEY (Member_id)
 REFERENCES tbl_member(Member_id)
 ON DELETE CASCADE;
 
--- ===========================
--- [3] 데이터 삽입
--- ===========================
+-- 5) 값 삽입
 
 -- tbl_member
 INSERT INTO tbl_member VALUES (111,'aaa','111','일반','대구','010-111-2222');
@@ -85,32 +71,41 @@ INSERT INTO tbl_rental VALUES (1,1010,111);
 INSERT INTO tbl_rental VALUES (2,1011,222);
 INSERT INTO tbl_rental VALUES (3,1012,333);
 
--- ===========================
--- [4] 제약조건 확인
--- ===========================
--- (실행용 SELECT, 결과는 MySQL 콘솔에서 확인)
-SELECT table_name, constraint_name, constraint_type
-FROM information_schema.table_constraints
-WHERE table_schema = DATABASE()
-  AND table_name IN ('tbl_member', 'tbl_book', 'tbl_rental');
+-- 확인
+SELECT * FROM tbl_book;
+SELECT * FROM tbl_member;
+SELECT * FROM tbl_rental;
 
--- ===========================
--- [5] 인덱스 추가 및 확인
--- ===========================
+-- 6) 제약 조건 확인 (MySQL용: information_schema 사용)
+SELECT
+    TABLE_NAME,
+    CONSTRAINT_NAME,
+    CONSTRAINT_TYPE
+FROM information_schema.TABLE_CONSTRAINTS
+WHERE TABLE_NAME IN ('tbl_member', 'tbl_book', 'tbl_rental')
+  AND CONSTRAINT_SCHEMA = DATABASE();
+
+-- 7) FK 컬럼에 인덱스 추가 후 확인
+
 CREATE INDEX idx_rental_member_id ON tbl_rental(Member_id);
 CREATE INDEX idx_rental_book_code ON tbl_rental(Book_code);
 
 -- 인덱스 확인
-SHOW INDEX FROM tbl_rental;
+SELECT
+    TABLE_NAME,
+    INDEX_NAME,
+    COLUMN_NAME
+FROM information_schema.STATISTICS
+WHERE TABLE_NAME = 'tbl_rental'
+  AND TABLE_SCHEMA = DATABASE();
 
--- ===========================
--- [6] 뷰 생성 및 확인
--- ===========================
+-- 8) 뷰 생성 및 조회
+
 CREATE OR REPLACE VIEW ShowRental_view AS
 SELECT
-  r.Rental_id,
-  m.Member_name,
-  b.book_name
+    r.Rental_id,
+    m.Member_name,
+    b.book_name
 FROM tbl_rental r
 INNER JOIN tbl_member m ON r.Member_id = m.Member_id
 INNER JOIN tbl_book b ON r.Book_code = b.Book_code;
